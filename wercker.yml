@@ -1,0 +1,129 @@
+workflows:
+  - name: all
+    pipelines:
+      - name: build
+      - name: build-image-test
+        requires:
+          - build
+      - name: deploy-image
+        requires:
+          - build-image-test
+      - name: verify-deployment
+        requires:
+          - deploy-image
+
+build: 
+  # do a build
+  box: golang
+  steps:
+    - script: 
+        code: |
+          go build
+
+unit-test: 
+  # run the unit tests
+  box: golang
+  steps:
+    - script: 
+        name: Run the unit tests
+        code: |
+          go test ./... 
+
+build-image-test:
+  # build the image and test it
+  box: alpine
+  steps:
+    - internal/docker-build: 
+        dockerfile: Dockerfile 
+        image-name: my-new-image 
+    - internal/docker-run:
+        image: my-new-image
+        name: myTestContainer
+    - script:
+        name: Install Curl
+        code: apk --no-cache add curl 
+    - script: 
+        name: Wait for container to start 
+        code: | 
+          until $(curl --output /dev/null --silent --head --fail http://myTestContainer:5000); do printf '.'; sleep 5; done        
+    - script: 
+        name: Test the container that we started using docker-run
+        code: |
+            if curlOutput=`curl -s myTestContainer:5000`; then 
+                export expected="Hello World!"
+                if [ "$curlOutput" == "$expected" ]; then
+                    echo "Test passed: container gave expected response: " $expected
+                else
+                    echo "Test failed: container gave unexpected response: " $curlOutput
+                    echo "The expected response was: " $expected
+                    exit 1
+                fi   
+            else 
+                echo "Test failed: container did not respond"
+                exit 1
+            fi      
+deploy-image:
+  # deploy (push) the image
+  box: alpine
+  steps:
+    - script:    
+        name: Check USERNAME and PASSWORD variables
+        code: |
+          if [[ -z "$USERNAME" ]]; then
+            echo Environment variable $USERNAME is not set. Set it to your Docker Hub username.
+            return 1
+          fi    
+          if [[ -z "$PASSWORD" ]]; then
+            echo Environment variable $PASSWORD is not set. Set it to your Docker Hub password.
+            return 1
+          fi               
+    - internal/docker-build: 
+        dockerfile: Dockerfile 
+        image-name: my-new-image        
+    - internal/docker-push:    
+        image-name: my-new-image
+        username: $USERNAME   
+        password: $PASSWORD 
+        repository: docker.io/$USERNAME/simple-workflow-example
+        tag: latest 
+verify-deployment:
+  # verify that the image we deployed can be used
+  box: alpine
+  steps:
+    - script:    
+        name: Check USERNAME and PASSWORD variables
+        code: |
+          if [[ -z "$USERNAME" ]]; then
+            echo Environment variable $USERNAME is not set. Set it to your Docker Hub username.
+            return 1
+          fi    
+          if [[ -z "$PASSWORD" ]]; then
+            echo Environment variable $PASSWORD is not set. Set it to your Docker Hub password.
+            return 1
+          fi     
+    - internal/docker-run:
+        image: docker.io/$USERNAME/simple-workflow-example:latest
+        name: myTestContainer
+    - script:
+        name: Install Curl
+        code: apk --no-cache add curl 
+    - script: 
+        name: Wait for container to start 
+        code: | 
+          until $(curl --output /dev/null --silent --head --fail http://myTestContainer:5000); do printf '.'; sleep 5; done        
+    - script: 
+        name: Test the container that we started using docker-run
+        code: |
+            if curlOutput=`curl -s myTestContainer:5000`; then 
+                export expected="Hello World!"
+                if [ "$curlOutput" == "$expected" ]; then
+                    echo "Test passed: container gave expected response: " $expected
+                else
+                    echo "Test failed: container gave unexpected response: " $curlOutput
+                    echo "The expected response was: " $expected
+                    exit 1
+                fi   
+            else 
+                echo "Test failed: container did not respond"
+                exit 1
+            fi  
