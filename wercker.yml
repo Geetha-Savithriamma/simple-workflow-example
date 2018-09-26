@@ -1,17 +1,3 @@
-workflows:
-  - name: all
-    pipelines:
-      - name: build
-      - name: build-image-test
-        requires:
-          - build
-      - name: deploy-image
-        requires:
-          - build-image-test
-      - name: verify-deployment
-        requires:
-          - deploy-image
-
 build:
   # do a build
   box: golang
@@ -29,7 +15,6 @@ unit-test:
         name: Run the unit tests
         code: |
           go test ./... 
-          exit 1
 
 build-image-test:
   # build the image and test it
