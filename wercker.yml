@@ -91,16 +91,12 @@ verify-deployment:
   box: alpine
   steps:
     - script:    
-        name: Check USERNAME and PASSWORD variables
+        name: Check USERNAME variable
         code: |
           if [[ -z "$USERNAME" ]]; then
             echo Environment variable $USERNAME is not set. Set it to your Docker Hub username.
             return 1
-          fi    
-          if [[ -z "$PASSWORD" ]]; then
-            echo Environment variable $PASSWORD is not set. Set it to your Docker Hub password.
-            return 1
-          fi     
+          fi      
     - internal/docker-run:
         image: docker.io/$USERNAME/simple-workflow-example:latest
         name: myTestContainer
@@ -127,3 +123,9 @@ verify-deployment:
                 echo "Test failed: container did not respond"
                 exit 1
             fi  
+report-success:
+  # report that the workflow succeeded
+  box: alpine
+  steps:
+    - script:    
+        code: Workflow completed successfully
