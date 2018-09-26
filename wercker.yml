@@ -115,4 +115,4 @@ report-success:
   box: alpine
   steps:
     - script:    
-        code: Workflow completed successfully
+        code: echo Workflow completed successfully
