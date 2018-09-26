@@ -12,7 +12,7 @@ workflows:
         requires:
           - deploy-image
 
-build: 
+build:
   # do a build
   box: golang
   steps:
