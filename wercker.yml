@@ -54,7 +54,7 @@ deploy-image:
   box: alpine
   steps:
     - script:    
-        name: Check USERNAME and PASSWORD variables
+        name: Check the USERNAME and PASSWORD variables
         code: |
           if [[ -z "$USERNAME" ]]; then
             echo Environment variable $USERNAME is not set. Set it to your Docker Hub username.
