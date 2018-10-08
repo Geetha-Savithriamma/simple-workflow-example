@@ -17,7 +17,7 @@ unit-test:
           go test ./... 
 
 build-image-test:
-  # build the image and test it
+  # build the image and test
   box: alpine
   steps:
     - internal/docker-build: 
